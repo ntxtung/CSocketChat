@@ -55,8 +55,7 @@ int main(int argc, char *argv[])
     // loop through all the results and connect to the first we can
     for (p = servinfo; p != NULL; p = p->ai_next)
     {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                             p->ai_protocol)) == -1)
+        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
             perror("client: socket");
             continue;
@@ -80,21 +79,40 @@ int main(int argc, char *argv[])
 
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
     printf("client: connecting to %s\n", s);
+    char* name;
+    printf("What is your name: ");
+    fgets(name, 20, stdin);
+    strtok(name, "\n");
+    
+    send(sockfd, name, strlen(name), 0);
+    printf("Welcome %s\n", name);
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    while (1)
-    {
-        if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
+    if (fork() == 0) {
+        // Child Process
+        while (1)
         {
-            perror("recv");
-            exit(1);
-        }
+            if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
+            {
+                perror("recv");
+                exit(1);
+            }
 
-        buf[numbytes] = '\0';
-        if (strlen(buf) > 0)
-        {
-            printf("client: received '%s'\n", buf);
+            buf[numbytes] = '\0';
+            if (strlen(buf) > 0)
+            {
+                printf("%s\n", buf);
+            }
+        }
+    } else {
+        // Parent Process
+        while (1) {
+            char message[MAXDATASIZE];
+            fgets(message, MAXDATASIZE, stdin);
+            
+            strtok(message, "\n");
+            send(sockfd, message, strlen(message), 0);
         }
     }
 
